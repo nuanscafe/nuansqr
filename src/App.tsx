@@ -40,7 +40,7 @@ const HomePage = () => {
 
 function App() {
   return (
-    <Router>
+    <Router basename="/nuansqr/">
       <CartProvider>
         <div className="min-h-screen bg-amber-50">
           <Routes>
