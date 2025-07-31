@@ -37,7 +37,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const removeFromCart = (itemId: number) => {
-    setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    setItems(prevItems => prevItems.filter(item => parseInt(item.id) !== itemId));
   };
 
   const updateQuantity = (itemId: number, quantity: number) => {
@@ -48,7 +48,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     setItems(prevItems => 
       prevItems.map(item => 
-        item.id === itemId ? { ...item, quantity } : item
+        parseInt(item.id) === itemId ? { ...item, quantity } : item
       )
     );
   };
