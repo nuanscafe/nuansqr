@@ -15,9 +15,13 @@ const CheckoutPage: React.FC = () => {
       const orderNoteElement = document.getElementById('order-note') as HTMLTextAreaElement;
       const orderNote = orderNoteElement ? orderNoteElement.value : '';
 
+      // Generate unique session ID
+      const sessionId = crypto.randomUUID();
+      
       // Prepare the order data
       const orderData = {
         tableId: tableId,
+        sessionId: sessionId,
         items: items.map(item => ({ // Map cart items to a suitable format for Firestore
           id: item.id,
           name: item.name,
@@ -27,7 +31,8 @@ const CheckoutPage: React.FC = () => {
         totalPrice: getTotalPrice(),
         orderNote: orderNote,
         timestamp: Timestamp.now(), // Add a timestamp
-        status: 'Pending', // Initial status
+        status: 'new', // Initial status (changed from 'Pending' to match our OrderStatus type)
+        paymentStatus: 'pending', // Add payment status
       };
 
       // Save the order to Firestore

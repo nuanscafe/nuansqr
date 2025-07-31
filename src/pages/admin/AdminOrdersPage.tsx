@@ -1,6 +1,9 @@
 import { db } from '../../firebase'; // Import the initialized Firestore instance
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore'; // Import Firestore functions
 import React, { useState, useEffect } from 'react';
+import WaiterCallNotifications from '../../components/admin/WaiterCallNotifications';
+import OrderGrid from '../../components/admin/OrderGrid';
+import { playNewOrderSound } from '../../utils/audioUtils';
 
 // Sipariş durumları
 type OrderStatus = 'new' | 'preparing' | 'ready' | 'delivered';
@@ -17,31 +20,52 @@ interface OrderItem {
 interface Order {
   id: string; // Firestore document ID for the order
   tableId: string;
+  sessionId: string; // Unique session ID to distinguish different orders from same table
   items: OrderItem[];
   status: OrderStatus;
   totalPrice: number;
   orderNote?: string; // Use orderNote to match the field name in CheckoutPage.tsx
   timestamp: Timestamp; // Use Timestamp type for Firestore timestamp
+  paymentStatus?: 'pending' | 'paid'; // Payment status
 }
 
-// Sipariş durumu için renk ve etiket belirleme
-const getStatusInfo = (status: OrderStatus) => {
-  switch (status) {
-    case 'new':
-      return { color: 'bg-blue-100 text-blue-800', label: 'Yeni' };
-    case 'preparing':
-      return { color: 'bg-yellow-100 text-yellow-800', label: 'Hazırlanıyor' };
-    case 'ready':
-      return { color: 'bg-green-100 text-green-800', label: 'Hazır' };
-    case 'delivered':
-      return { color: 'bg-gray-100 text-gray-800', label: 'Teslim Edildi' };
-  }
-};
+
 
 const AdminOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]); // State for orders, initialized as empty array
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [previousOrderCount, setPreviousOrderCount] = useState(0); // State to track previous order count
+  
+  // Sipariş durumu için renk ve etiket belirleme
+  const getStatusInfo = (status: OrderStatus) => {
+    switch (status) {
+      case 'new':
+        return { color: 'bg-green-100 text-green-800', label: 'Yeni' };
+      case 'preparing':
+        return { color: 'bg-yellow-100 text-yellow-800', label: 'Hazırlanıyor' };
+      case 'ready':
+        return { color: 'bg-blue-100 text-blue-800', label: 'Hazır' };
+      case 'delivered':
+        return { color: 'bg-gray-100 text-gray-800', label: 'Teslim Edildi' };
+    }
+  };
+  
+  // Request notification permission on component mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+  
+  // Function to show notification
+  const showNewOrderNotification = () => {
+    if (Notification.permission === 'granted') {
+      new Notification('Yeni Sipariş!', {
+        body: 'Yeni bir sipariş geldi.',
+        icon: '/favicon.ico'
+      });
+    }
+  };
   
   // Effect to fetch orders from Firestore in real-time and play sound on new order
   useEffect(() => {
@@ -56,9 +80,8 @@ const AdminOrdersPage: React.FC = () => {
   
       // Check if new orders have arrived
       if (ordersList.length > previousOrderCount && previousOrderCount !== 0) {
-        // Play a sound
-        const audio = new Audio('/path/to/your/notification/sound.mp3'); // ** IMPORTANT: Replace with the actual path to your sound file **
-        audio.play().catch(error => console.error("Error playing sound:", error));
+        playNewOrderSound();
+        showNewOrderNotification();
       }
   
       setOrders(ordersList);
@@ -99,76 +122,17 @@ const AdminOrdersPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Sipariş Yönetimi</h1>
       
+      {/* Garson Çağrısı Bildirimleri */}
+      <WaiterCallNotifications />
+      
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sipariş Listesi */}
+        {/* Sipariş Grid */}
         <div className="lg:w-2/3">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800">Siparişler</h2>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Sipariş ID
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Masa
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tutar
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Durum
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tarih
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      İşlemler
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.map(order => {
-                    const statusInfo = getStatusInfo(order.status);
-                    
-                    return (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {order.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {order.tableId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {order.totalPrice} ₺
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.color}`}>
-                            {statusInfo.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(order.timestamp)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="text-amber-600 hover:text-amber-900 mr-3"
-                          >
-                            Detay
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <OrderGrid 
+            orders={orders}
+            onStatusUpdate={updateOrderStatus}
+            onOrderSelect={setSelectedOrder}
+          />
         </div>
         
         {/* Sipariş Detayı */}

@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "../firebase"; // Import the initialized Firestore instance
 
 export interface MenuItem {
@@ -51,6 +51,39 @@ export const getCategories = async (): Promise<Category[]> => {
   return categoriesList;
 };
 
+// Garson çağırma sistemi
+export interface WaiterCall {
+  id: string;
+  tableId: string;
+  timestamp: Timestamp;
+  status: 'pending' | 'acknowledged' | 'resolved';
+  message?: string;
+}
+
+// Function to create a waiter call
+export const createWaiterCall = async (tableId: string, message?: string): Promise<void> => {
+  const waiterCallsCollection = collection(db, "waiterCalls");
+  const waiterCallData = {
+    tableId,
+    timestamp: Timestamp.now(),
+    status: 'pending' as const,
+    message: message || ''
+  };
+  
+  await addDoc(waiterCallsCollection, waiterCallData);
+};
+
+// Function to fetch waiter calls from Firestore
+export const getWaiterCalls = async (): Promise<WaiterCall[]> => {
+  const waiterCallsCollection = collection(db, "waiterCalls");
+  const waiterCallsSnapshot = await getDocs(waiterCallsCollection);
+  const waiterCallsList = waiterCallsSnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  })) as WaiterCall[];
+  return waiterCallsList;
+};
+
 // Masa verileri
 export interface Table {
   id: number;
@@ -67,4 +100,16 @@ export const tables: Table[] = [
   { id: 6, name: 'Masa 6', qrCode: 'table-6' },
   { id: 7, name: 'Masa 7', qrCode: 'table-7' },
   { id: 8, name: 'Masa 8', qrCode: 'table-8' },
+  { id: 9, name: 'Masa 9', qrCode: 'table-9' },
+  { id: 10, name: 'Masa 10', qrCode: 'table-10' },
+  { id: 11, name: 'Masa 11', qrCode: 'table-11' },
+  { id: 12, name: 'Masa 12', qrCode: 'table-12' },
+  { id: 13, name: 'Masa 13', qrCode: 'table-13' },
+  { id: 14, name: 'Masa 14', qrCode: 'table-14' },
+  { id: 15, name: 'Masa 15', qrCode: 'table-15' },
+  { id: 16, name: 'Masa 16', qrCode: 'table-16' },
+  { id: 17, name: 'Masa 17', qrCode: 'table-17' },
+  { id: 18, name: 'Masa 18', qrCode: 'table-18' },
+  { id: 19, name: 'Masa 19', qrCode: 'table-19' },
+  { id: 20, name: 'Masa 20', qrCode: 'table-20' },
 ];

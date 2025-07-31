@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { getMenuItems, getCategories, MenuItem, Category } from '../../data/menuData';
 import { useCart } from '../../context/CartContext';
 import { useTranslation } from 'react-i18next';
+import WaiterCallButton from '../../components/menu/WaiterCallButton';
+import FloatingCart from '../../components/menu/FloatingCart';
 import {
   Select,
   SelectContent,
@@ -55,25 +57,34 @@ const MenuPage: React.FC<MenuPageProps> = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center bg-amber-100 rounded-lg p-4 mb-6 text-center">
-        <div>
-          <h1 className="text-3xl font-bold text-amber-800">{t('ourMenu')}</h1>
-          {tableId && (
-            <p className="text-amber-700 mt-2">{t('table')}: {tableId}</p>
-          )}
+      <div className="bg-amber-100 rounded-lg p-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-amber-800">{t('ourMenu')}</h1>
+            {tableId && (
+              <p className="text-amber-700 mt-2">{t('table')}: {tableId}</p>
+            )}
+          </div>
+          <Select onValueChange={changeLanguage} defaultValue={i18n.language}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Dil Seç" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tr">Türkçe</SelectItem>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="ru">Русский</SelectItem>
+              <SelectItem value="de">Deutsch</SelectItem>
+              <SelectItem value="fr">Français</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select onValueChange={changeLanguage} defaultValue={i18n.language}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="Dil Seç" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tr">Türkçe</SelectItem>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="ru">Русский</SelectItem>
-            <SelectItem value="de">Deutsch</SelectItem>
-            <SelectItem value="fr">Français</SelectItem>
-          </SelectContent>
-        </Select>
+        
+        {/* Garson Çağırma Butonu */}
+        {tableId && (
+          <div className="max-w-xs">
+            <WaiterCallButton tableId={tableId} />
+          </div>
+        )}
       </div>
 
       {/* Kategori Seçimi */}
@@ -132,6 +143,9 @@ const MenuPage: React.FC<MenuPageProps> = () => {
           </div>
         ))}
       </div>
+      
+      {/* Floating Cart */}
+      {tableId && <FloatingCart tableId={tableId} />}
     </div>
   );
 };
