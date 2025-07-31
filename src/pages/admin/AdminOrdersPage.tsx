@@ -35,7 +35,7 @@ const AdminOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]); // State for orders, initialized as empty array
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [previousOrderCount, setPreviousOrderCount] = useState(0); // State to track previous order count
-  
+
   // Sipariş durumu için renk ve etiket belirleme
   const getStatusInfo = (status: OrderStatus) => {
     switch (status) {
@@ -49,14 +49,14 @@ const AdminOrdersPage: React.FC = () => {
         return { color: 'bg-gray-100 text-gray-800', label: 'Teslim Edildi' };
     }
   };
-  
+
   // Request notification permission on component mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, []);
-  
+
   // Function to show notification
   const showNewOrderNotification = () => {
     if (Notification.permission === 'granted') {
@@ -66,28 +66,28 @@ const AdminOrdersPage: React.FC = () => {
       });
     }
   };
-  
+
   // Effect to fetch orders from Firestore in real-time and play sound on new order
   useEffect(() => {
     const ordersCollection = collection(db, 'orders');
     const ordersQuery = query(ordersCollection, orderBy('timestamp', 'desc')); // Order by timestamp
-  
+
     const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
       const ordersList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data() as Omit<Order, 'id'> // Cast data and add id
       }));
-  
+
       // Check if new orders have arrived
       if (ordersList.length > previousOrderCount && previousOrderCount !== 0) {
         playNewOrderSound();
         showNewOrderNotification();
       }
-  
+
       setOrders(ordersList);
       setPreviousOrderCount(ordersList.length); // Update the previous order count
     });
-  
+
     // Clean up the listener on component unmount
     return () => unsubscribe();
   }, [previousOrderCount]); // Add previousOrderCount to dependency array
@@ -105,7 +105,7 @@ const AdminOrdersPage: React.FC = () => {
       alert('Sipariş durumu güncellenirken bir hata oluştu.');
     }
   };
-  
+
   // Tarih formatı (adjust to handle Firestore Timestamp)
   const formatDate = (timestamp: Timestamp) => {
     const date = timestamp.toDate(); // Convert Firestore Timestamp to Date
@@ -117,24 +117,24 @@ const AdminOrdersPage: React.FC = () => {
       year: 'numeric'
     }).format(date);
   };
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Sipariş Yönetimi</h1>
-      
+
       {/* Garson Çağrısı Bildirimleri */}
       <WaiterCallNotifications />
-      
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sipariş Grid */}
         <div className="lg:w-2/3">
-          <OrderGrid 
+          <OrderGrid
             orders={orders}
             onStatusUpdate={updateOrderStatus}
             onOrderSelect={setSelectedOrder}
           />
         </div>
-        
+
         {/* Sipariş Detayı */}
         <div className="lg:w-1/3">
           {selectedOrder ? (
@@ -150,28 +150,27 @@ const AdminOrdersPage: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="mb-4 p-3 bg-amber-50 rounded-md">
                 <p className="text-amber-700 font-medium">Masa: {selectedOrder.tableId}</p>
                 <p className="text-amber-700 text-sm">{formatDate(selectedOrder.timestamp)}</p>
               </div>
-              
+
               <div className="mb-6">
                 <h3 className="text-md font-medium text-gray-700 mb-2">Sipariş Durumu</h3>
                 <div className="flex flex-wrap gap-2">
                   {(['new', 'preparing', 'ready', 'delivered'] as OrderStatus[]).map(status => {
                     const isActive = selectedOrder.status === status;
                     const statusInfo = getStatusInfo(status);
-                    
+
                     return (
                       <button
                         key={status}
                         onClick={() => updateOrderStatus(selectedOrder.id, status)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          isActive 
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${isActive
                             ? statusInfo.color
                             : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         {statusInfo.label}
                       </button>
@@ -179,7 +178,7 @@ const AdminOrdersPage: React.FC = () => {
                   })}
                 </div>
               </div>
-              
+
               <div className="mb-6">
                 <h3 className="text-md font-medium text-gray-700 mb-2">Sipariş Öğeleri</h3>
                 <div className="border-t border-b border-gray-200 py-2 divide-y divide-gray-200">
@@ -193,12 +192,12 @@ const AdminOrdersPage: React.FC = () => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="flex justify-between items-center text-lg font-bold mb-4">
                 <span>Toplam:</span>
                 <span>{selectedOrder.totalPrice} ₺</span>
               </div>
-              
+
               {selectedOrder.orderNote && (
                 <div className="mb-4">
                   <h3 className="text-md font-medium text-gray-700 mb-2">Sipariş Notu</h3>
